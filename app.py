@@ -5,6 +5,7 @@ from flask_cors import CORS
 import requests
 import os
 import time
+from urllib.parse import quote
 
 app = Flask(__name__)
 CORS(app)
@@ -15,16 +16,18 @@ HEADERS = {"User-Agent": "Mozilla/5.0", "Referer": "https://y.qq.com"}
 
 @app.route("/")
 def index():
-    return jsonify({"service": "车载音乐解析服务", "version": "1.0"})
+    return jsonify({"service": "车载音乐解析服务", "version": "1.1"})
 
 @app.route("/api/search")
 def search():
     keyword = request.args.get("keyword", "")
     if not keyword:
         return jsonify({"error": "keyword不能为空"}), 400
+    
     params = {"w": keyword, "format": "json", "p": 1, "n": 30, "cr": 1, "g_tk": 5381}
     try:
         resp = requests.get(QQ_SEARCH_URL, params=params, headers=HEADERS, timeout=10)
+        resp.encoding = 'utf-8'
         data = resp.json()
         songs = data.get("data", {}).get("song", {}).get("list", [])
         result = []
@@ -50,6 +53,7 @@ def get_url():
     songmid = request.args.get("songmid", "")
     if not songmid:
         return jsonify({"error": "songmid不能为空"}), 400
+    
     try:
         post_data = {"req_1": {"module": "vkey.GetVkeyServer", "method": "CgiGetVkey",
             "param": {"guid": str(int(time.time())), "songmid": [songmid], "songtype": [0],
